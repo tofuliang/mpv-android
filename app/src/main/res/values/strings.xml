@@ -53,6 +53,9 @@
     <string name="pref_video_interpolation_title">Interpolation</string>
     <string name="pref_video_interpolation_summary">Reduce judder caused by mismatched video FPS and display Hz\nRequires Video sync set to any of the display-* modes</string>
 
+    <string name="pref_video_dumb_mode_title">Hardware decoding "dumb" mode</string>
+    <string name="pref_video_dumb_mode_summary">always forces hwdec, no subs or scalers</string> <!-- TODO -->
+
 
     <string name="pref_header_developer">Developer</string>
 

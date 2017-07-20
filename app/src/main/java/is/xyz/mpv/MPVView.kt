@@ -2,22 +2,18 @@ package `is`.xyz.mpv
 
 import android.content.Context
 import android.media.AudioManager
-import android.opengl.GLSurfaceView
 import android.view.SurfaceView
 import android.view.SurfaceHolder
 import android.util.AttributeSet
 import android.util.Log
 import android.view.WindowManager
 
-import javax.microedition.khronos.egl.EGLConfig
-import javax.microedition.khronos.opengles.GL10
-
 import `is`.xyz.mpv.MPVLib.mpvFormat.*
 import android.os.Build
 import android.preference.PreferenceManager
 import kotlin.reflect.KProperty
 
-internal class MPVView(context: Context, attrs: AttributeSet) : /*GL*/SurfaceView(context, attrs), SurfaceHolder.Callback {
+internal class MPVView(context: Context, attrs: AttributeSet) : SurfaceView(context, attrs), SurfaceHolder.Callback {
 
     fun initialize(configDir: String) {
         holder.addCallback(this)
@@ -34,9 +30,12 @@ internal class MPVView(context: Context, attrs: AttributeSet) : /*GL*/SurfaceVie
 
         // initial options
         data class Property(val preference_name: String, val mpv_option: String)
+        this.dumbMode = sharedPreferences.getBoolean("video_dumb_mode", false)
 
         // hwdec
-        val hwdec = if (sharedPreferences.getBoolean("hardware_decoding", true))
+        val hwdec = if (dumbMode)
+            "mediacodec"
+        else if (sharedPreferences.getBoolean("hardware_decoding", true))
             "mediacodec-copy"
         else
             "no"
@@ -108,8 +107,12 @@ internal class MPVView(context: Context, attrs: AttributeSet) : /*GL*/SurfaceVie
 
         // set options
 
-        MPVLib.setOptionString("vo", "gpu") //"opengl-cb")
-        MPVLib.setOptionString("gpu-context", "android")
+        if (dumbMode) {
+            MPVLib.setOptionString("vo", "mediacodec_embed")
+        } else {
+            MPVLib.setOptionString("vo", "gpu")
+            MPVLib.setOptionString("gpu-context", "android")
+        }
         MPVLib.setOptionString("hwdec", hwdec)
         MPVLib.setOptionString("hwdec-codecs", "h264,hevc,mpeg4,mpeg2video,vp8,vp9")
         MPVLib.setOptionString("ao", "opensles")
@@ -117,28 +120,13 @@ internal class MPVView(context: Context, attrs: AttributeSet) : /*GL*/SurfaceVie
         MPVLib.setOptionString("tls-ca-file", "${this.context.filesDir.path}/cacert.pem")
     }
 
-    /*fun playFile(filePath: String) {
-        // Pick an EGLConfig with RGB8 color, 16-bit depth, no stencil,
-        // supporting OpenGL ES 3.0 or later backwards-compatible versions.
-        setEGLContextClientVersion(2)
-        setEGLConfigChooser(8, 8, 8, 0, 16, 0)
-        val renderer = Renderer(this)
-        renderer.setFilePath(filePath)
-        setRenderer(renderer)
-        renderMode = RENDERMODE_WHEN_DIRTY
-    }*/
-
     fun playFile(filePath: String) {
         this.filePath = filePath
     }
 
     fun onPause() {
-        //queueEvent {
-            MPVLib.setPropertyString("vid", "no")
-            /*MPVLib.destroyGL()
-        }*/
+        MPVLib.setPropertyString("vid", "no")
         paused = true
-        //super.onPause()
     }
     
     fun onResume() {
@@ -146,7 +134,7 @@ internal class MPVView(context: Context, attrs: AttributeSet) : /*GL*/SurfaceVie
 
     // Called when back button is pressed, or app is shutting down
     fun destroy() {
-        // At this point Renderer is already dead so it won't call step/draw, as such it's safe to free mpv resources
+        // At this point the surface is already detached so it won't call step/draw, as such it's safe to free mpv resources
         MPVLib.clearObservers()
         MPVLib.destroy()
     }
@@ -198,6 +186,7 @@ internal class MPVView(context: Context, attrs: AttributeSet) : /*GL*/SurfaceVie
     }
 
     private var filePath: String? = null
+    private var dumbMode = false
 
     // Property getters/setters
 
@@ -273,13 +262,18 @@ internal class MPVView(context: Context, attrs: AttributeSet) : /*GL*/SurfaceVie
     fun cyclePause() = MPVLib.command(arrayOf("cycle", "pause"))
     fun cycleAudio() = MPVLib.command(arrayOf("cycle", "audio"))
     fun cycleSub() = MPVLib.command(arrayOf("cycle", "sub"))
-    fun cycleHwdec() = MPVLib.setPropertyString("hwdec", if (hwdecActive!!) "no" else "mediacodec-copy")
+    fun cycleHwdec() {
+        if (!dumbMode) // impossible in dumb mode
+            MPVLib.setPropertyString("hwdec", if (hwdecActive!!) "no" else "mediacodec-copy")
+    }
+
+    // Surface callbacks
 
     override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
     }
 
     override fun surfaceCreated(holder: SurfaceHolder) {
-        Log.w(TAG, "Creating libmpv Surface")
+        Log.w(TAG, "Creating libmpv surface")
         MPVLib.attachSurface(holder.surface)
         if (filePath != null) {
             MPVLib.command(arrayOf("loadfile", filePath as String))
@@ -294,35 +288,6 @@ internal class MPVView(context: Context, attrs: AttributeSet) : /*GL*/SurfaceVie
     override fun surfaceDestroyed(holder: SurfaceHolder) {
         MPVLib.detachSurface()
     }
-
-    /*private class Renderer(val glView: MPVView) : GLSurfaceView.Renderer {
-        private var filePath: String? = null
-
-        override fun onDrawFrame(gl: GL10) {
-            MPVLib.draw()
-        }
-
-        override fun onSurfaceChanged(gl: GL10, width: Int, height: Int) {
-            MPVLib.resize(width, height)
-        }
-
-        override fun onSurfaceCreated(gl: GL10, config: EGLConfig) {
-            Log.w(TAG, "Creating libmpv GL surface")
-            MPVLib.initGL(glView)
-            if (filePath != null) {
-                MPVLib.command(arrayOf("loadfile", filePath as String))
-                filePath = null
-            } else {
-                // Get here when user goes to home screen and then returns to the app
-                // mpv disables video output when opengl context is destroyed, enable it back
-                MPVLib.setPropertyInt("vid", 1)
-            }
-        }
-
-        fun setFilePath(file_path: String) {
-            filePath = file_path
-        }
-    }*/
 
     companion object {
         private val TAG = "mpv"
