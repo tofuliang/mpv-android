@@ -36,6 +36,7 @@
 
                 <data android:scheme="http" />
                 <data android:scheme="https" />
+                <data android:scheme="rtsp" />
                 <data android:host="*" />
                 <data android:mimeType="video/*" />
                 <data android:mimeType="audio/*" />
@@ -48,6 +49,7 @@
 
                 <data android:scheme="http" />
                 <data android:scheme="https" />
+                <data android:scheme="rtsp" />
                 <data android:host="*" />
                 <!-- the duplicate patterns below work around an Android bug: -->
                 <!-- http://stackoverflow.com/questions/3400072/#answer-8599921 -->
@@ -58,6 +60,14 @@
                 <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.mkv" />
                 <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.mkv" />
                 <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\.mkv" />
+
+                <data android:pathPattern=".*\\.smil" />
+                <data android:pathPattern=".*\\..*\\.smil" />
+                <data android:pathPattern=".*\\..*\\..*\\.smil" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.smil" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.smil" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.smil" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\.smil" />
 
                 <data android:pathPattern=".*\\.mp4" />
                 <data android:pathPattern=".*\\..*\\.mp4" />

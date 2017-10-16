@@ -287,7 +287,7 @@ class MPVActivity : Activity(), EventObserver, TouchGesturesObserver {
         val filepath = when (data.scheme) {
             "file" -> data.path
             "content" -> openContentFd(data)
-            "http", "https" -> data.toString()
+            "http", "https", "rtsp" -> data.toString()
             else -> null
         }
 
